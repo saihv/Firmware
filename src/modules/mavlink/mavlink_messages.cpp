@@ -284,7 +284,7 @@ protected:
 class MavlinkStreamHighresIMU : public MavlinkStream
 {
 public:
-	MavlinkStreamHighresIMU() : MavlinkStream(), accel_counter(0), gyro_counter(0), mag_counter(0), baro_counter(0)
+	MavlinkStreamHighresIMU() : MavlinkStream(), accel_timestamp(0), gyro_timestamp(0), mag_timestamp(0), baro_timestamp(0)
 	{
 	}
 
@@ -302,10 +302,10 @@ private:
 	MavlinkOrbSubscription *sensor_sub;
 	struct sensor_combined_s *sensor;
 
-	uint32_t accel_counter;
-	uint32_t gyro_counter;
-	uint32_t mag_counter;
-	uint32_t baro_counter;
+	uint64_t accel_timestamp;
+	uint64_t gyro_timestamp;
+	uint64_t mag_timestamp;
+	uint64_t baro_timestamp;
 
 protected:
 	void subscribe(Mavlink *mavlink)
@@ -320,28 +320,28 @@ protected:
 
 		uint16_t fields_updated = 0;
 
-		if (accel_counter != sensor->accelerometer_counter) {
+		if (accel_timestamp != sensor->accelerometer_timestamp) {
 			/* mark first three dimensions as changed */
 			fields_updated |= (1 << 0) | (1 << 1) | (1 << 2);
-			accel_counter = sensor->accelerometer_counter;
+			accel_timestamp = sensor->accelerometer_timestamp;
 		}
 
-		if (gyro_counter != sensor->gyro_counter) {
+		if (gyro_timestamp != sensor->timestamp) {
 			/* mark second group dimensions as changed */
 			fields_updated |= (1 << 3) | (1 << 4) | (1 << 5);
-			gyro_counter = sensor->gyro_counter;
+			gyro_timestamp = sensor->timestamp;
 		}
 
-		if (mag_counter != sensor->magnetometer_counter) {
+		if (mag_timestamp != sensor->magnetometer_timestamp) {
 			/* mark third group dimensions as changed */
 			fields_updated |= (1 << 6) | (1 << 7) | (1 << 8);
-			mag_counter = sensor->magnetometer_counter;
+			mag_timestamp = sensor->magnetometer_timestamp;
 		}
 
-		if (baro_counter != sensor->baro_counter) {
+		if (baro_timestamp != sensor->baro_timestamp) {
 			/* mark last group dimensions as changed */
 			fields_updated |= (1 << 9) | (1 << 11) | (1 << 12);
-			baro_counter = sensor->baro_counter;
+			baro_timestamp = sensor->baro_timestamp;
 		}
 
 		mavlink_msg_highres_imu_send(_channel,
