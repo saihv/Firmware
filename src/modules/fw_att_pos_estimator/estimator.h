@@ -161,7 +161,7 @@ void calcvelNED(float (&velNED)[3], float gpsCourse, float gpsGndSpd, float gpsV
 
 void calcposNED(float (&posNED)[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef);
 
-void calcLLH(float (&posNED)[3], float lat, float lon, float hgt, float latRef, float lonRef, float hgtRef);
+void calcLLH(float (&posNED)[3], float &lat, float &lon, float &hgt, float latRef, float lonRef, float hgtRef);
 
 void OnGroundCheck();
 
