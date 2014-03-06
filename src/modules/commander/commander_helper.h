@@ -54,10 +54,16 @@ bool is_rotary_wing(const struct vehicle_status_s *current_status);
 int buzzer_init(void);
 void buzzer_deinit(void);
 
-void set_tune(int tune);
-void tune_positive(bool use_buzzer);
-void tune_neutral(bool use_buzzer);
-void tune_negative(bool use_buzzer);
+void tune_error(void);
+void tune_positive(void);
+void tune_neutral(void);
+void tune_negative(void);
+int tune_arm(void);
+int tune_low_bat(void);
+int tune_critical_bat(void);
+void tune_stop(void);
+
+void led_negative();
 
 int blink_msg_state();
 

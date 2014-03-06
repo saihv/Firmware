@@ -90,7 +90,7 @@ static const int ERROR = -1;
 class __EXPORT Airspeed : public device::I2C
 {
 public:
-	Airspeed(int bus, int address, unsigned conversion_interval, const char* path);
+	Airspeed(int bus, int address, unsigned conversion_interval);
 	virtual ~Airspeed();
 
 	virtual int	init();

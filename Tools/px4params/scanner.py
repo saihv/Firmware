@@ -1,6 +1,5 @@
 import os
 import re
-import codecs
 
 class Scanner(object):
     """
@@ -30,6 +29,6 @@ class Scanner(object):
         Scans provided file and passes its contents to the parser using
         parser.Parse method.
         """
-        with codecs.open(path, 'r', 'utf-8') as f:
+        with open(path, 'r') as f:
             contents = f.read()
         parser.Parse(contents)

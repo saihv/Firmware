@@ -87,8 +87,10 @@ MODULES		+= examples/flow_position_estimator
 #MODULES		+= modules/segway # XXX Needs GCC 4.7 fix
 MODULES		+= modules/fw_pos_control_l1
 MODULES		+= modules/fw_att_control
-MODULES		+= modules/mc_att_control
-MODULES		+= modules/mc_pos_control
+MODULES		+= modules/multirotor_att_control
+MODULES		+= modules/multirotor_pos_control
+MODULES		+= examples/flow_position_control
+MODULES		+= examples/flow_speed_control
 
 #
 # Logging
@@ -108,7 +110,6 @@ MODULES		+= modules/systemlib
 MODULES		+= modules/systemlib/mixer
 MODULES		+= modules/controllib
 MODULES		+= modules/uORB
-MODULES		+= modules/dataman
 
 #
 # Libraries
@@ -120,7 +121,6 @@ MODULES		+= lib/ecl
 MODULES		+= lib/external_lgpl
 MODULES		+= lib/geo
 MODULES		+= lib/conversion
-MODULES		+= lib/launchdetection
 
 #
 # Demo apps

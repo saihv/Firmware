@@ -141,8 +141,8 @@ test_mount(int argc, char *argv[])
 			/* announce mode switch */
 			if (it_left_fsync_prev != it_left_fsync && it_left_fsync == 0) {
 				warnx("\n SUCCESSFULLY PASSED FSYNC'ED WRITES, CONTINUTING WITHOUT FSYNC");
-				fsync(fileno(stdout));
-				fsync(fileno(stderr));
+				fsync(stdout);
+				fsync(stderr);
 				usleep(20000);
 			}
 
@@ -162,7 +162,7 @@ test_mount(int argc, char *argv[])
 	}
 
 	char buf[64];
-	(void)sprintf(buf, "TEST: %d %d ", it_left_fsync, it_left_abort);
+	int wret = sprintf(buf, "TEST: %d %d ", it_left_fsync, it_left_abort);
 	lseek(cmd_fd, 0, SEEK_SET);
 	write(cmd_fd, buf, strlen(buf) + 1);
 	fsync(cmd_fd);
@@ -174,8 +174,8 @@ test_mount(int argc, char *argv[])
 
 		printf("\n\n====== FILE TEST: %u bytes chunks (%s) ======\n", chunk_sizes[c], (it_left_fsync > 0) ? "FSYNC" : "NO FSYNC");
 		printf("unpower the system immediately (within 0.5s) when the hash (#) sign appears\n");
-		fsync(fileno(stdout));
-		fsync(fileno(stderr));
+		fsync(stdout);
+		fsync(stderr);
 		usleep(50000);
 
 		for (unsigned a = 0; a < alignments; a++) {
@@ -185,20 +185,22 @@ test_mount(int argc, char *argv[])
 			uint8_t write_buf[chunk_sizes[c] + alignments] __attribute__((aligned(64)));
 
 			/* fill write buffer with known values */
-			for (unsigned i = 0; i < sizeof(write_buf); i++) {
+			for (int i = 0; i < sizeof(write_buf); i++) {
 				/* this will wrap, but we just need a known value with spacing */
 				write_buf[i] = i+11;
 			}
 
 			uint8_t read_buf[chunk_sizes[c] + alignments] __attribute__((aligned(64)));
+			hrt_abstime start, end;
 
 			int fd = open("/fs/microsd/testfile", O_TRUNC | O_WRONLY | O_CREAT);
 
+			start = hrt_absolute_time();
 			for (unsigned i = 0; i < iterations; i++) {
 
 				int wret = write(fd, write_buf + a, chunk_sizes[c]);
 
-				if (wret != (int)chunk_sizes[c]) {
+				if (wret != chunk_sizes[c]) {
 					warn("WRITE ERROR!");
 
 					if ((0x3 & (uintptr_t)(write_buf + a)))
@@ -212,8 +214,8 @@ test_mount(int argc, char *argv[])
 					fsync(fd);
 				} else {
 					printf("#");
-					fsync(fileno(stdout));
-					fsync(fileno(stderr));
+					fsync(stdout);
+					fsync(stderr);
 				}
 			}
 
@@ -222,9 +224,11 @@ test_mount(int argc, char *argv[])
 			}
 
 			printf(".");
-			fsync(fileno(stdout));
-			fsync(fileno(stderr));
+			fsync(stdout);
+			fsync(stderr);
 			usleep(200000);
+
+			end = hrt_absolute_time();
 
 			close(fd);
 			fd = open("/fs/microsd/testfile", O_RDONLY);
@@ -233,7 +237,7 @@ test_mount(int argc, char *argv[])
 			for (unsigned i = 0; i < iterations; i++) {
 				int rret = read(fd, read_buf, chunk_sizes[c]);
 
-				if (rret != (int)chunk_sizes[c]) {
+				if (rret != chunk_sizes[c]) {
 					warnx("READ ERROR!");
 					return 1;
 				}
@@ -241,7 +245,7 @@ test_mount(int argc, char *argv[])
 				/* compare value */
 				bool compare_ok = true;
 
-				for (unsigned j = 0; j < chunk_sizes[c]; j++) {
+				for (int j = 0; j < chunk_sizes[c]; j++) {
 					if (read_buf[j] != write_buf[j + a]) {
 						warnx("COMPARISON ERROR: byte %d, align shift: %d", j, a);
 						compare_ok = false;
@@ -267,16 +271,16 @@ test_mount(int argc, char *argv[])
 		}
 	}
 
-	fsync(fileno(stdout));
-	fsync(fileno(stderr));
+	fsync(stdout);
+	fsync(stderr);
 	usleep(20000);
 
 
 
 	/* we always reboot for the next test if we get here */
 	warnx("Iteration done, rebooting..");
-	fsync(fileno(stdout));
-	fsync(fileno(stderr));
+	fsync(stdout);
+	fsync(stderr);
 	usleep(50000);
 	systemreset(false);
 

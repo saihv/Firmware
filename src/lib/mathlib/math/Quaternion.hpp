@@ -1,9 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
- *   Author: Anton Babushkin <anton.babushkin@me.com>
- *           Pavel Kirienko <pavel.kirienko@gmail.com>
- *           Lorenz Meier <lm@inf.ethz.ch>
+ *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,129 +34,82 @@
 /**
  * @file Quaternion.hpp
  *
- * Quaternion class
+ * math quaternion lib
  */
 
-#ifndef QUATERNION_HPP
-#define QUATERNION_HPP
+#pragma once
 
-#include <math.h>
-#include "../CMSIS/Include/arm_math.h"
 #include "Vector.hpp"
 #include "Matrix.hpp"
 
 namespace math
 {
 
-class __EXPORT Quaternion : public Vector<4>
+class Dcm;
+class EulerAngles;
+
+class __EXPORT Quaternion : public Vector
 {
 public:
-	/**
-	 * trivial ctor
-	 */
-	Quaternion() : Vector<4>() {}
 
 	/**
-	 * copy ctor
+	 * default ctor
 	 */
-	Quaternion(const Quaternion &q) : Vector<4>(q) {}
+	Quaternion();
 
 	/**
-	 * casting from vector
+	 * ctor from floats
 	 */
-	Quaternion(const Vector<4> &v) : Vector<4>(v) {}
+	Quaternion(float a, float b, float c, float d);
 
 	/**
-	 * setting ctor
+	 * ctor from data
 	 */
-	Quaternion(const float d[4]) : Vector<4>(d) {}
+	Quaternion(const float *data);
 
 	/**
-	 * setting ctor
+	 * ctor from Vector
 	 */
-	Quaternion(const float a0, const float b0, const float c0, const float d0): Vector<4>(a0, b0, c0, d0) {}
-
-	using Vector<4>::operator *;
+	Quaternion(const Vector &v);
 
 	/**
-	 * multiplication
+	 * ctor from EulerAngles
 	 */
-	const Quaternion operator *(const Quaternion &q) const {
-		return Quaternion(
-			       data[0] * q.data[0] - data[1] * q.data[1] - data[2] * q.data[2] - data[3] * q.data[3],
-			       data[0] * q.data[1] + data[1] * q.data[0] + data[2] * q.data[3] - data[3] * q.data[2],
-			       data[0] * q.data[2] - data[1] * q.data[3] + data[2] * q.data[0] + data[3] * q.data[1],
-			       data[0] * q.data[3] + data[1] * q.data[2] - data[2] * q.data[1] + data[3] * q.data[0]);
-	}
+	Quaternion(const EulerAngles &euler);
+
+	/**
+	 * ctor from Dcm
+	 */
+	Quaternion(const Dcm &dcm);
+
+	/**
+	 * deep copy ctor
+	 */
+	Quaternion(const Quaternion &right);
+
+	/**
+	 * dtor
+	 */
+	virtual ~Quaternion();
 
 	/**
 	 * derivative
 	 */
-	const Quaternion derivative(const Vector<3> &w) {
-		float dataQ[] = {
-			data[0], -data[1], -data[2], -data[3],
-			data[1],  data[0], -data[3],  data[2],
-			data[2],  data[3],  data[0], -data[1],
-			data[3], -data[2],  data[1],  data[0]
-		};
-		Matrix<4, 4> Q(dataQ);
-		Vector<4> v(0.0f, w.data[0], w.data[1], w.data[2]);
-		return Q * v * 0.5f;
-	}
+	Vector derivative(const Vector &w);
 
 	/**
-	 * imaginary part of quaternion
+	 * accessors
 	 */
-	Vector<3> imag(void) {
-		return Vector<3>(&data[1]);
-	}
-
-	/**
-	 * set quaternion to rotation defined by euler angles
-	 */
-	void from_euler(float roll, float pitch, float yaw) {
-		double cosPhi_2 = cos(double(roll) / 2.0);
-		double sinPhi_2 = sin(double(roll) / 2.0);
-		double cosTheta_2 = cos(double(pitch) / 2.0);
-		double sinTheta_2 = sin(double(pitch) / 2.0);
-		double cosPsi_2 = cos(double(yaw) / 2.0);
-		double sinPsi_2 = sin(double(yaw) / 2.0);
-		data[0] = cosPhi_2 * cosTheta_2 * cosPsi_2 + sinPhi_2 * sinTheta_2 * sinPsi_2;
-		data[1] = sinPhi_2 * cosTheta_2 * cosPsi_2 - cosPhi_2 * sinTheta_2 * sinPsi_2;
-		data[2] = cosPhi_2 * sinTheta_2 * cosPsi_2 + sinPhi_2 * cosTheta_2 * sinPsi_2;
-		data[3] = cosPhi_2 * cosTheta_2 * sinPsi_2 - sinPhi_2 * sinTheta_2 * cosPsi_2;
-	}
-
-	void from_dcm(const Matrix<3, 3> &m) {
-		// avoiding singularities by not using division equations
-		data[0] = 0.5f * sqrtf(1.0f + m.data[0][0] + m.data[1][1] + m.data[2][2]);
-		data[1] = 0.5f * sqrtf(1.0f + m.data[0][0] - m.data[1][1] - m.data[2][2]);
-		data[2] = 0.5f * sqrtf(1.0f - m.data[0][0] + m.data[1][1] - m.data[2][2]);
-		data[3] = 0.5f * sqrtf(1.0f - m.data[0][0] - m.data[1][1] + m.data[2][2]);
-	}
-
-	/**
-	 * create rotation matrix for the quaternion
-	 */
-	Matrix<3, 3> to_dcm(void) const {
-		Matrix<3, 3> R;
-		float aSq = data[0] * data[0];
-		float bSq = data[1] * data[1];
-		float cSq = data[2] * data[2];
-		float dSq = data[3] * data[3];
-		R.data[0][0] = aSq + bSq - cSq - dSq;
-		R.data[0][1] = 2.0f * (data[1] * data[2] - data[0] * data[3]);
-		R.data[0][2] = 2.0f * (data[0] * data[2] + data[1] * data[3]);
-		R.data[1][0] = 2.0f * (data[1] * data[2] + data[0] * data[3]);
-		R.data[1][1] = aSq - bSq + cSq - dSq;
-		R.data[1][2] = 2.0f * (data[2] * data[3] - data[0] * data[1]);
-		R.data[2][0] = 2.0f * (data[1] * data[3] - data[0] * data[2]);
-		R.data[2][1] = 2.0f * (data[0] * data[1] + data[2] * data[3]);
-		R.data[2][2] = aSq - bSq - cSq + dSq;
-		return R;
-	}
+	void setA(float a) { (*this)(0) = a; }
+	void setB(float b) { (*this)(1) = b; }
+	void setC(float c) { (*this)(2) = c; }
+	void setD(float d) { (*this)(3) = d; }
+	const float &getA() const { return (*this)(0); }
+	const float &getB() const { return (*this)(1); }
+	const float &getC() const { return (*this)(2); }
+	const float &getD() const { return (*this)(3); }
 };
 
-}
+int __EXPORT quaternionTest();
+} // math
 
-#endif // QUATERNION_HPP

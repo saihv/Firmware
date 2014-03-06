@@ -40,23 +40,8 @@
 #include <nuttx/config.h>
 #include <systemlib/param/param.h>
 
-/**
- * Auto-start script index.
- *
- * Defines the auto-start script used to bootstrap the system.
- *
- * @group System
- */
+// Auto-start script with index #n
 PARAM_DEFINE_INT32(SYS_AUTOSTART, 0);
 
-/**
- * Automatically configure default values.
- *
- * Set to 1 to set platform-specific parameters to their default
- * values on next system startup. 
- *
- * @min 0
- * @max 1
- * @group System
- */
+// Automatically configure default values
 PARAM_DEFINE_INT32(SYS_AUTOCONFIG, 0);

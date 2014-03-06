@@ -45,7 +45,6 @@
 #include <stdbool.h>
 #include <fcntl.h>
 #include <math.h>
-#include <string.h>
 
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_status.h>
@@ -82,22 +81,11 @@ bool is_rotary_wing(const struct vehicle_status_s *current_status)
 	       || (current_status->system_type == VEHICLE_TYPE_COAXIAL);
 }
 
-static int buzzer = -1;
-static hrt_abstime blink_msg_end = 0;	// end time for currently blinking LED message, 0 if no blink message
-static hrt_abstime tune_end = 0;		// end time of currently played tune, 0 for repeating tunes or silence
-static int tune_current = TONE_STOP_TUNE;		// currently playing tune, can be interrupted after tune_end
-static unsigned int tune_durations[TONE_NUMBER_OF_TUNES];
+static int buzzer;
+static hrt_abstime blink_msg_end;
 
 int buzzer_init()
 {
-	tune_end = 0;
-	tune_current = 0;
-	memset(tune_durations, 0, sizeof(tune_durations));
-	tune_durations[TONE_NOTIFY_POSITIVE_TUNE] = 800000;
-	tune_durations[TONE_NOTIFY_NEGATIVE_TUNE] = 900000;
-	tune_durations[TONE_NOTIFY_NEUTRAL_TUNE] = 500000;
-	tune_durations[TONE_ARMING_WARNING_TUNE] = 3000000;
-
 	buzzer = open(TONEALARM_DEVICE_PATH, O_WRONLY);
 
 	if (buzzer < 0) {
@@ -113,60 +101,58 @@ void buzzer_deinit()
 	close(buzzer);
 }
 
-void set_tune(int tune) {
-	unsigned int new_tune_duration = tune_durations[tune];
-	/* don't interrupt currently playing non-repeating tune by repeating */
-	if (tune_end == 0 || new_tune_duration != 0 || hrt_absolute_time() > tune_end) {
-		/* allow interrupting current non-repeating tune by the same tune */
-		if (tune != tune_current || new_tune_duration != 0) {
-			ioctl(buzzer, TONE_SET_ALARM, tune);
-		}
-		tune_current = tune;
-		if (new_tune_duration != 0) {
-			tune_end = hrt_absolute_time() + new_tune_duration;
-		} else {
-			tune_end = 0;
-		}
-	}
+void tune_error()
+{
+	ioctl(buzzer, TONE_SET_ALARM, TONE_ERROR_TUNE);
 }
 
-/**
- * Blink green LED and play positive tune (if use_buzzer == true).
- */
-void tune_positive(bool use_buzzer)
+void tune_positive()
 {
 	blink_msg_end = hrt_absolute_time() + BLINK_MSG_TIME;
 	rgbled_set_color(RGBLED_COLOR_GREEN);
 	rgbled_set_mode(RGBLED_MODE_BLINK_FAST);
-	if (use_buzzer) {
-		set_tune(TONE_NOTIFY_POSITIVE_TUNE);
-	}
+	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_POSITIVE_TUNE);
 }
 
-/**
- * Blink white LED and play neutral tune (if use_buzzer == true).
- */
-void tune_neutral(bool use_buzzer)
+void tune_neutral()
 {
 	blink_msg_end = hrt_absolute_time() + BLINK_MSG_TIME;
 	rgbled_set_color(RGBLED_COLOR_WHITE);
 	rgbled_set_mode(RGBLED_MODE_BLINK_FAST);
-	if (use_buzzer) {
-		set_tune(TONE_NOTIFY_NEUTRAL_TUNE);
-	}
+	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEUTRAL_TUNE);
 }
 
-/**
- * Blink red LED and play negative tune (if use_buzzer == true).
- */
-void tune_negative(bool use_buzzer)
+void tune_negative()
+{
+	led_negative();
+	ioctl(buzzer, TONE_SET_ALARM, TONE_NOTIFY_NEGATIVE_TUNE);
+}
+
+void led_negative()
 {
 	blink_msg_end = hrt_absolute_time() + BLINK_MSG_TIME;
 	rgbled_set_color(RGBLED_COLOR_RED);
 	rgbled_set_mode(RGBLED_MODE_BLINK_FAST);
-	if (use_buzzer) {
-		set_tune(TONE_NOTIFY_NEGATIVE_TUNE);
-	}
+}
+
+int tune_arm()
+{
+	return ioctl(buzzer, TONE_SET_ALARM, TONE_ARMING_WARNING_TUNE);
+}
+
+int tune_low_bat()
+{
+	return ioctl(buzzer, TONE_SET_ALARM, TONE_BATTERY_WARNING_SLOW_TUNE);
+}
+
+int tune_critical_bat()
+{
+	return ioctl(buzzer, TONE_SET_ALARM, TONE_BATTERY_WARNING_FAST_TUNE);
+}
+
+void tune_stop()
+{
+	ioctl(buzzer, TONE_SET_ALARM, TONE_STOP_TUNE);
 }
 
 int blink_msg_state()
@@ -175,7 +161,6 @@ int blink_msg_state()
 		return 0;
 
 	} else if (hrt_absolute_time() > blink_msg_end) {
-		blink_msg_end = 0;
 		return 2;
 
 	} else {
@@ -183,8 +168,8 @@ int blink_msg_state()
 	}
 }
 
-static int leds = -1;
-static int rgbleds = -1;
+static int leds;
+static int rgbleds;
 
 int led_init()
 {

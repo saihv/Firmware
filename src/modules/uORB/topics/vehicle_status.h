@@ -54,8 +54,6 @@
 #include <stdbool.h>
 #include "../uORB.h"
 
-#include <navigator/navigator_state.h>
-
 /**
  * @addtogroup topics @{
  */
@@ -66,8 +64,22 @@ typedef enum {
 	MAIN_STATE_SEATBELT,
 	MAIN_STATE_EASY,
 	MAIN_STATE_AUTO,
-	MAIN_STATE_MAX
+	MAIN_STATE_OFFBOARD,
 } main_state_t;
+
+/* navigation state machine */
+typedef enum {
+	NAVIGATION_STATE_DIRECT = 0,		// true manual control, no any stabilization
+	NAVIGATION_STATE_STABILIZE,		// attitude stabilization
+	NAVIGATION_STATE_ALTHOLD,		// attitude + altitude stabilization
+	NAVIGATION_STATE_VECTOR,		// attitude + altitude + position stabilization
+	NAVIGATION_STATE_AUTO_READY,	// AUTO, landed, reeady for takeoff
+	NAVIGATION_STATE_AUTO_TAKEOFF,	// detect takeoff using land detector and switch to desired AUTO mode
+	NAVIGATION_STATE_AUTO_LOITER,	// pause mission
+	NAVIGATION_STATE_AUTO_MISSION,	// fly mission
+	NAVIGATION_STATE_AUTO_RTL,		// Return To Launch, when home position switch to LAND
+	NAVIGATION_STATE_AUTO_LAND		// land and switch to AUTO_READY when landed (detect using land detector)
+} navigation_state_t;
 
 typedef enum {
 	ARMING_STATE_INIT = 0,
@@ -76,22 +88,13 @@ typedef enum {
 	ARMING_STATE_ARMED_ERROR,
 	ARMING_STATE_STANDBY_ERROR,
 	ARMING_STATE_REBOOT,
-	ARMING_STATE_IN_AIR_RESTORE,
-	ARMING_STATE_MAX
+	ARMING_STATE_IN_AIR_RESTORE
 } arming_state_t;
 
 typedef enum {
 	HIL_STATE_OFF = 0,
 	HIL_STATE_ON
 } hil_state_t;
-
-typedef enum {
-	FAILSAFE_STATE_NORMAL = 0,		/**< Normal operation */
-	FAILSAFE_STATE_RTL,				/**< Return To Launch */
-	FAILSAFE_STATE_LAND,			/**< Land without position control */
-	FAILSAFE_STATE_TERMINATION,		/**< Disable motors and use parachute, can't be recovered */
-	FAILSAFE_STATE_MAX
-} failsafe_state_t;
 
 typedef enum {
 	MODE_SWITCH_MANUAL = 0,
@@ -106,15 +109,19 @@ typedef enum {
 
 typedef enum {
 	RETURN_SWITCH_NONE = 0,
-	RETURN_SWITCH_NORMAL,
 	RETURN_SWITCH_RETURN
 } return_switch_pos_t;
 
 typedef enum {
 	MISSION_SWITCH_NONE = 0,
-	MISSION_SWITCH_LOITER,
 	MISSION_SWITCH_MISSION
 } mission_switch_pos_t;
+
+typedef enum {
+	OFFBOARD_SWITCH_NONE = 0,
+	OFFBOARD_SWITCH_OFFBOARD,
+	OFFBOARD_SWITCH_ONBOARD
+} offboard_switch_pos_t;
 
 enum VEHICLE_MODE_FLAG {
 	VEHICLE_MODE_FLAG_SAFETY_ARMED = 128,
@@ -176,11 +183,9 @@ struct vehicle_status_s
 	uint64_t timestamp; /**< in microseconds since system start, is set whenever the writing thread stores new data */
 
 	main_state_t main_state;				/**< main state machine */
-	unsigned int set_nav_state;	/**< set navigation state machine to specified value */
-	uint64_t set_nav_state_timestamp;	/**< timestamp of latest change of set_nav_state */
+	navigation_state_t navigation_state;	/**< navigation state machine */
 	arming_state_t arming_state;			/**< current arming state */
 	hil_state_t hil_state;					/**< current hil state */
-	failsafe_state_t failsafe_state;		/**< current failsafe state */
 
 	int32_t system_type;				/**< system type, inspired by MAVLink's VEHICLE_TYPE enum */
 	int32_t	system_id;				/**< system id, inspired by MAVLink's system ID field */
@@ -192,6 +197,7 @@ struct vehicle_status_s
 	return_switch_pos_t return_switch;
 	assisted_switch_pos_t assisted_switch;
 	mission_switch_pos_t mission_switch;
+	offboard_switch_pos_t offboard_switch;
 
 	bool condition_battery_voltage_valid;
 	bool condition_system_in_air_restore;	/**< true if we can restore in mid air */

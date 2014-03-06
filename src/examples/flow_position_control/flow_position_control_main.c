@@ -61,12 +61,16 @@
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_bodyframe_speed_setpoint.h>
+#include <uORB/topics/vehicle_local_position_setpoint.h>
+#include <uORB/topics/offboard_control_setpoint.h>
 #include <uORB/topics/filtered_bottom_flow.h>
 #include <systemlib/systemlib.h>
 #include <systemlib/perf_counter.h>
 #include <systemlib/err.h>
 #include <poll.h>
 #include <mavlink/mavlink_log.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 #include "flow_position_control_params.h"
 
@@ -175,6 +179,8 @@ flow_position_control_thread_main(int argc, char *argv[])
 	memset(&local_pos, 0, sizeof(local_pos));
 	struct vehicle_bodyframe_speed_setpoint_s speed_sp;
 	memset(&speed_sp, 0, sizeof(speed_sp));
+	struct offboard_control_setpoint_s offboard_sp;
+	memset(&offboard_sp, 0, sizeof(offboard_sp)); 
 
 	/* subscribe to attitude, motor setpoints and system state */
 	int parameter_update_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -184,6 +190,7 @@ flow_position_control_thread_main(int argc, char *argv[])
 	int manual_control_setpoint_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	int filtered_bottom_flow_sub = orb_subscribe(ORB_ID(filtered_bottom_flow));
 	int vehicle_local_position_sub = orb_subscribe(ORB_ID(vehicle_local_position));
+	int offboard_control_setpoint_sub = orb_subscribe(ORB_ID(offboard_control_setpoint));
 
 	orb_advert_t speed_sp_pub;
 	bool speed_setpoint_adverted = false;
@@ -251,6 +258,7 @@ flow_position_control_thread_main(int argc, char *argv[])
 				/* no return value, ignore */
 //				printf("[flow position control] no filtered flow updates\n");
 			}
+
 			else
 			{
 				/* parameter update available? */
@@ -281,12 +289,33 @@ flow_position_control_thread_main(int argc, char *argv[])
 					orb_copy(ORB_ID(vehicle_local_position), vehicle_local_position_sub, &local_pos);
 					/* get a local copy of control mode */
 					orb_copy(ORB_ID(vehicle_control_mode), control_mode_sub, &control_mode);
+					orb_copy(ORB_ID(offboard_control_setpoint), offboard_control_setpoint_sub, &offboard_sp);
+			
 
-					if (control_mode.flag_control_velocity_enabled)
+					if (control_mode.flag_control_velocity_enabled || control_mode.flag_control_offboard_enabled)
 					{
-						float manual_pitch = manual.pitch / params.rc_scale_pitch; // 0 to 1
-						float manual_roll = manual.roll / params.rc_scale_roll; // 0 to 1
-						float manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
+						float manual_pitch, manual_roll, manual_yaw;
+						
+						if (control_mode.flag_control_offboard_enabled)
+						{
+							manual_pitch = offboard_sp.p2; // 0 to 1
+							manual_roll = offboard_sp.p1; // 0 to 1
+							//manual_yaw = offboard_sp.p3; // -1 to 1
+							//warnx("Scaling factor is %f",params.rc_scale_pitch);
+							warnx("\nObtained pitch value is %f",manual_pitch);
+							//manual_throttle = offboard_sp.p4;
+							manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
+							//manual_throttle = manual.throttle;
+						}
+						else
+						{
+							manual_pitch = manual.pitch / params.rc_scale_pitch; // 0 to 1
+							manual_roll = manual.roll / params.rc_scale_roll; // 0 to 1
+							manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
+							//warnx("Scaling factor is %f",params.rc_scale_pitch);
+							//warnx("\nObtained pitch value is %f",manual_pitch);
+							//manual_throttle = manual.throttle;
+						}
 
 						if(status_changed == false)
 							mavlink_log_info(mavlink_fd,"[fpc] flow POSITION control engaged");
@@ -300,6 +329,7 @@ flow_position_control_thread_main(int argc, char *argv[])
 							continue;
 						}
 						dt = ((float) (hrt_absolute_time() - last_time)) * time_scale;
+						mavlink_log_info(mavlink_fd,"Flow position controller time taken: %f", dt);
 						last_time = hrt_absolute_time();
 
 						/* update flow sum setpoint */
@@ -535,6 +565,7 @@ flow_position_control_thread_main(int argc, char *argv[])
 					{
 						/* in manual or stabilized state just reset speed and flow sum setpoint */
 						//mavlink_log_info(mavlink_fd,"[fpc] reset speed sp, flow_sp_sumx,y (%f,%f)",filtered_flow.sumx, filtered_flow.sumy);
+						
 						if(status_changed == true)
 							mavlink_log_info(mavlink_fd,"[fpc] flow POSITION controller disengaged.");
 
