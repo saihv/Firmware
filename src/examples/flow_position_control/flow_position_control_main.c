@@ -302,7 +302,7 @@ flow_position_control_thread_main(int argc, char *argv[])
 							manual_roll = offboard_sp.p1; // 0 to 1
 							//manual_yaw = offboard_sp.p3; // -1 to 1
 							//warnx("Scaling factor is %f",params.rc_scale_pitch);
-							warnx("\nObtained pitch value is %f",manual_pitch);
+							//warnx("\nObtained pitch value is %f",manual_pitch);
 							//manual_throttle = offboard_sp.p4;
 							manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
 							//manual_throttle = manual.throttle;

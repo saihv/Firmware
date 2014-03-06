@@ -270,7 +270,7 @@ handle_message(mavlink_message_t *msg)
 		mavlink_set_quad_swarm_roll_pitch_yaw_thrust_t quad_motors_setpoint;
 		mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_decode(msg, &quad_motors_setpoint);
 
-		warnx("Receiving offboard commands");
+		//warnx("Receiving offboard commands");
 
 		if (mavlink_system.sysid < 4) {
 
@@ -315,8 +315,8 @@ handle_message(mavlink_message_t *msg)
 			offboard_control_sp.p3 = (float)quad_motors_setpoint.yaw[mavlink_system.sysid - 1]    / (float)INT16_MAX;
 			offboard_control_sp.p4 = (float)quad_motors_setpoint.thrust[mavlink_system.sysid - 1] / (float)UINT16_MAX;
 
-			warnx("Received thrust command %.3f", offboard_control_sp.p4);
-			warnx("Received offboard command %d", quad_motors_setpoint.thrust[mavlink_system.sysid - 1]);
+			warnx("Received pitch command %.3f", offboard_control_sp.p4);
+			//warnx("Received offboard command %d", quad_motors_setpoint.thrust[mavlink_system.sysid - 1]);
 
 			if (quad_motors_setpoint.thrust[mavlink_system.sysid - 1] == 0) {
 				ml_armed = false;
