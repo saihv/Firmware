@@ -35,7 +35,7 @@
 # MAVLink protocol to uORB interface process (XXX hack for onboard use)
 #
 
-MODULE_COMMAND	 = mavlink_onboard
+MODULE_COMMAND	 = mavlink_offboard
 SRCS		 = mavlink.c \
 		   mavlink_receiver.c
 
