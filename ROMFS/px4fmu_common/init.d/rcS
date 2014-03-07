@@ -489,6 +489,7 @@ then
 		sh /etc/init.d/rc.interface
 		
 		mavlink_onboard start -d /dev/ttyS3 -b 115200
+		mavlink_offboard start -d /dev/ttyACM0 -b 115200
 		
 		# Start standard multicopter apps
 		sh /etc/init.d/rc.mc_apps

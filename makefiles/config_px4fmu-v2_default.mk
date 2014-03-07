@@ -71,6 +71,7 @@ MODULES		+= modules/commander
 MODULES		+= modules/navigator
 MODULES		+= modules/mavlink
 MODULES		+= modules/mavlink_onboard
+MODULES		+= modules/mavlink_offboard
 
 #
 # Estimation modules (EKF/ SO3 / other filters)
