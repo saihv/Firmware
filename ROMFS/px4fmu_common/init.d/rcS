@@ -248,9 +248,9 @@ then
 		then
 			set FMU_MODE serial
 		fi
-	else
+	#else
 		# Try to get an USB console if not in HIL mode
-		nshterm /dev/ttyACM0 &
+	#	nshterm /dev/ttyACM0 &
 	fi
 	
 	#
