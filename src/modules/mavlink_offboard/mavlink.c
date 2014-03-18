@@ -364,8 +364,8 @@ get_mavlink_mode_and_state(const struct vehicle_control_mode_s *control_mode, co
 int mavlink_thread_main(int argc, char *argv[])
 {
 	int ch;
-	char *device_name = "/dev/ttyACM0";
-	baudrate = 115200;
+	char *device_name = "/dev/ttyS1";   // Original is ttyACM0
+	baudrate = 57600;
 
 	/* XXX this is never written? */
 	struct vehicle_status_s v_status;

@@ -248,9 +248,9 @@ then
 		then
 			set FMU_MODE serial
 		fi
-	#else
+	else
 		# Try to get an USB console if not in HIL mode
-	#	nshterm /dev/ttyACM0 &
+		# nshterm /dev/ttyACM0 &
 	fi
 	
 	#
@@ -489,7 +489,7 @@ then
 		sh /etc/init.d/rc.interface
 		
 		mavlink_onboard start -d /dev/ttyS3 -b 115200
-		mavlink_offboard start -d /dev/ttyACM0 -b 230400
+		#mavlink_offboard start -d /dev/ttyACM0 -b 230400
 		
 		# Start standard multicopter apps
 		sh /etc/init.d/rc.mc_apps

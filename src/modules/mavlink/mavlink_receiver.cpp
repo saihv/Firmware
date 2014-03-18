@@ -266,20 +266,20 @@ handle_message(mavlink_message_t *msg)
 
 	/* Handle quadrotor motor setpoints */
 
-	if (msg->msgid == MAVLINK_MSG_ID_SET_QUAD_SWARM_ROLL_PITCH_YAW_THRUST) {
+	/*if (msg->msgid == MAVLINK_MSG_ID_SET_QUAD_SWARM_ROLL_PITCH_YAW_THRUST) {
 		mavlink_set_quad_swarm_roll_pitch_yaw_thrust_t quad_motors_setpoint;
 		mavlink_msg_set_quad_swarm_roll_pitch_yaw_thrust_decode(msg, &quad_motors_setpoint);
 
-		//warnx("Receiving offboard commands");
+		warnx("Receiving offboard commands");
 
 		if (mavlink_system.sysid < 4) {
 
-			/* switch to a receiving link mode */
+			/* switch to a receiving link mode 
 			gcs_link = false;
 
 			/*
 			 * rate control mode - defined by MAVLink
-			 */
+			 
 
 			uint8_t ml_mode = 0;
 			bool ml_armed = false;
@@ -316,7 +316,7 @@ handle_message(mavlink_message_t *msg)
 			offboard_control_sp.p4 = (float)quad_motors_setpoint.thrust[mavlink_system.sysid - 1] / (float)UINT16_MAX;
 
 			warnx("Received pitch command %.3f", offboard_control_sp.p4);
-			//warnx("Received offboard command %d", quad_motors_setpoint.thrust[mavlink_system.sysid - 1]);
+			warnx("Received offboard command %d", quad_motors_setpoint.thrust[mavlink_system.sysid - 1]);
 
 			if (quad_motors_setpoint.thrust[mavlink_system.sysid - 1] == 0) {
 				ml_armed = false;
@@ -327,16 +327,17 @@ handle_message(mavlink_message_t *msg)
 
 			offboard_control_sp.timestamp = hrt_absolute_time();
 
-			/* check if topic has to be advertised */
+			/* check if topic has to be advertised 
 			if (offboard_control_sp_pub <= 0) {
 				offboard_control_sp_pub = orb_advertise(ORB_ID(offboard_control_setpoint), &offboard_control_sp);
 
 			} else {
-				/* Publish */
+				/* Publish 
 				orb_publish(ORB_ID(offboard_control_setpoint), offboard_control_sp_pub, &offboard_control_sp);
 			}
 		}
 	}
+	*/
 
 	/* handle status updates of the radio */
 	if (msg->msgid == MAVLINK_MSG_ID_RADIO_STATUS) {

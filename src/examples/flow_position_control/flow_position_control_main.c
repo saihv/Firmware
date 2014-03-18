@@ -298,22 +298,16 @@ flow_position_control_thread_main(int argc, char *argv[])
 						
 						if (control_mode.flag_control_offboard_enabled)
 						{
-							manual_pitch = offboard_sp.p2; // 0 to 1
-							manual_roll = offboard_sp.p1; // 0 to 1
-							//manual_yaw = offboard_sp.p3; // -1 to 1
-							//warnx("Scaling factor is %f",params.rc_scale_pitch);
-							//warnx("\nObtained pitch value is %f",manual_pitch);
-							//manual_throttle = offboard_sp.p4;
-							manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
-							//manual_throttle = manual.throttle;
+							manual_pitch = offboard_sp.p2; // -1 to 1
+							manual_roll = offboard_sp.p1; // -1 to 1
+							manual_yaw = offboard_sp.p3; // -1 to 1
+							//manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
 						}
 						else
 						{
 							manual_pitch = manual.pitch / params.rc_scale_pitch; // 0 to 1
 							manual_roll = manual.roll / params.rc_scale_roll; // 0 to 1
 							manual_yaw = manual.yaw / params.rc_scale_yaw; // -1 to 1
-							//warnx("Scaling factor is %f",params.rc_scale_pitch);
-							//warnx("\nObtained pitch value is %f",manual_pitch);
 							//manual_throttle = manual.throttle;
 						}
 
