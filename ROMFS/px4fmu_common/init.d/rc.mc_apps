@@ -9,7 +9,8 @@
 if param compare INAV_ENABLED 1
 then
 	attitude_estimator_ekf start
-	position_estimator_inav start
+	#position_estimator_inav start
+	flow_position_estimator start
 else
 	ekf_att_pos_estimator start
 fi

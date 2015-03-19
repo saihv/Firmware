@@ -69,6 +69,8 @@
 #include <poll.h>
 #include <platforms/px4_defines.h>
 
+#include <drivers/drv_range_finder.h>
+
 #include "flow_position_estimator_params.h"
 
 __EXPORT int flow_position_estimator_main(int argc, char *argv[]);
@@ -157,8 +159,10 @@ int flow_position_estimator_thread_main(int argc, char *argv[])
 	static uint64_t time_last_flow = 0; // in ms
 	static float dt = 0.0f; // seconds
 	static float sonar_last = 0.0f;
+	static float range_last = 0.0f;
 	static bool sonar_valid = false;
 	static float sonar_lp = 0.0f;
+	static float range_lp = 0.0f;
 
 	/* subscribe to vehicle status, attitude, sensors and flow*/
 	struct actuator_armed_s armed;
@@ -171,6 +175,8 @@ int flow_position_estimator_thread_main(int argc, char *argv[])
 	memset(&att_sp, 0, sizeof(att_sp));
 	struct optical_flow_s flow;
 	memset(&flow, 0, sizeof(flow));
+	struct range_finder_report range;
+	memset(&range, 0, sizeof(range));
 
 	/* subscribe to parameter changes */
 	int parameter_update_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -189,6 +195,8 @@ int flow_position_estimator_thread_main(int argc, char *argv[])
 
 	/* subscribe to optical flow*/
 	int optical_flow_sub = orb_subscribe(ORB_ID(optical_flow));
+
+	int range_finder_sub = orb_subscribe(ORB_ID(sensor_range_finder));
 
 	/* init local position and filtered flow struct */
 	struct vehicle_local_position_s local_pos = {
@@ -269,6 +277,7 @@ int flow_position_estimator_thread_main(int argc, char *argv[])
 					perf_begin(mc_loop_perf);
 
 					orb_copy(ORB_ID(optical_flow), optical_flow_sub, &flow);
+					orb_copy(ORB_ID(sensor_range_finder), range_finder_sub, &range);
 					/* got flow, updating attitude and status as well */
 					orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub, &att);
 					orb_copy(ORB_ID(vehicle_attitude_setpoint), vehicle_attitude_setpoint_sub, &att_sp);
@@ -277,6 +286,9 @@ int flow_position_estimator_thread_main(int argc, char *argv[])
 
 					/* vehicle state estimation */
 					float sonar_new = flow.ground_distance_m;
+					float range_new = range.distance;
+
+
 
 					/* set liftoff boolean
 					 * -> at bottom sonar sometimes does not work correctly, and has to be calibrated (distance higher than 0.3m)
@@ -379,26 +391,29 @@ int flow_position_estimator_thread_main(int argc, char *argv[])
 						sonar_valid = true;
 					}
 
+					//warnx("Received range value of %.3f", range_new);
+
 					if (sonar_valid || params.debug)
 					{
 						/* simple lowpass sonar filtering */
 						/* if new value or with sonar update frequency */
-						if (sonar_new != sonar_last || counter % 10 == 0)
+						
+						if (range_new != range_last || counter % 10 == 0)
 						{
-							sonar_lp = 0.05f * sonar_new + 0.95f * sonar_lp;
-							sonar_last = sonar_new;
+							range_lp = 0.05f * range_new + 0.95f * range_lp;
+							range_last = range_new;
 						}
 
-						float height_diff = sonar_new - sonar_lp;
+						float height_diff = range_new - range_lp;
 
 						/* if over 1/2m spike follow lowpass */
 						if (height_diff < -params.sonar_lower_lp_threshold || height_diff > params.sonar_upper_lp_threshold)
 						{
-							local_pos.z = -sonar_lp;
+							local_pos.z = -range_lp;
 						}
 						else
 						{
-							local_pos.z = -sonar_new;
+							local_pos.z = -range_new;
 						}
 
 						local_pos.z_valid = true;

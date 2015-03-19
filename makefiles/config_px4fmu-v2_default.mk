@@ -81,6 +81,7 @@ MODULES 	+= modules/land_detector
 MODULES		+= modules/attitude_estimator_ekf
 MODULES		+= modules/ekf_att_pos_estimator
 MODULES		+= modules/position_estimator_inav
+MODULES		+= examples/flow_position_estimator
 
 #
 # Vehicle Control
